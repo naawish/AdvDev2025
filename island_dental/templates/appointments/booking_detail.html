@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}Booking Receipt{% endblock %}
+
+{% block content %}
+<h2>Booking Receipt</h2>
+<div class="card">
+    <div class="card-header">
+        Booking Reference: <strong>{{ appointment.booking_reference }}</strong>
+    </div>
+    <div class="card-body">
+        <p><strong>Status:</strong> {{ appointment.get_status_display }}</p>
+        <p><strong>Customer:</strong> {{ appointment.customer.get_full_name }} ({{ appointment.customer.email }})</p>
+        <p><strong>Date:</strong> {{ appointment.appointment_date|date:"l, F j, Y" }}</p>
+        <p><strong>Shift:</strong> {{ appointment.shift.get_name_display }}</p>
+         <p><strong>Time Slot:</strong>
+            {% if appointment.room.room_type == 'SURGERY' %}
+                {{ appointment.shift.surgery_start_time|time:"H:i" }} - {{ appointment.shift.surgery_end_time|time:"H:i" }}
+            {% else %}
+                 {{ appointment.shift.normal_start_time|time:"H:i" }} - {{ appointment.shift.normal_end_time|time:"H:i" }}
+            {% endif %}
+        </p>
+        <p><strong>Clinic:</strong> {{ appointment.clinic.name }} ({{ appointment.clinic.location }})</p>
+        <p><strong>Room:</strong> {{ appointment.room.room_number }} ({{ appointment.room.get_room_type_display }})</p>
+        <p><strong>Doctor:</strong> Dr. {{ appointment.doctor.first_name }} {{ appointment.doctor.last_name }}</p>
+        <p><strong>Service:</strong> {{ appointment.service.get_name_display }}</p>
+        <p><strong>Price:</strong> MVR {{ appointment.price }}</p>
+        {% if appointment.notes %}
+        <p><strong>Notes:</strong> {{ appointment.notes }}</p>
+        {% endif %}
+        <p><small>Booked on: {{ appointment.created_at|date:"Y-m-d H:i" }}</small></p>
+    </div>
+    <div class="card-footer">
+         {% if appointment.status == 'SCHEDULED' and appointment.appointment_date >= today and request.user == appointment.customer %} {# Add 'today' context variable in view #}
+             <form method="post" action="{% url 'appointments:cancel_booking' appointment.booking_reference %}" onsubmit="return confirm('Are you sure you want to cancel this booking?');">
+                 {% csrf_token %}
+                 <button type="submit" class="btn btn-danger">Cancel Booking</button>
+             </form>
+         {% elif appointment.status == 'CANCELLED' %}
+             <p class="text-warning">This appointment has been cancelled.</p>
+         {% elif appointment.status == 'COMPLETED' %}
+             <p class="text-success">This appointment has been completed.</p>
+          {% elif appointment.status == 'MISSED' %}
+              <p class="text-danger">This appointment was missed.</p>
+         {% endif %}
+    </div>
+</div>
+ <a href="{% url 'appointments:my_bookings' %}" class="btn btn-secondary mt-3">Back to My Bookings</a>
+{% endblock %}

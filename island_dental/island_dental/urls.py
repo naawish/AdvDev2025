@@ -20,3 +20,15 @@ from django.urls import path
 urlpatterns = [
     path('admin/', admin.site.urls),
 ]
+
+from django.contrib import admin
+from django.urls import path, include
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('accounts/', include('django.contrib.auth.urls')), # Built-in auth views (login, logout, etc.)
+    path('accounts/', include('users.urls')), # For custom user views like signup
+    path('clinics/', include('clinics.urls')), # For clinic/roster management views
+    path('', include('appointments.urls')), # Main appointment booking flows
+    # Add other app URLs as needed
+]

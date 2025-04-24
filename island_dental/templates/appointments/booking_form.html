@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block title %}Book Appointment{% endblock %}
+
+{% block content %}
+<h2>Book Your Appointment</h2>
+<form method="post" id="bookingForm">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <div id="availabilityResult" class="mt-3 mb-3"></div>
+    <button type="submit" class="btn btn-primary" id="submitBtn" disabled>Book Appointment</button>
+    <button type="button" class="btn btn-secondary" id="checkAvailabilityBtn">Check Availability & Price</button>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    const form = $('#bookingForm');
+    const clinicSelect = $('#id_clinic');
+    const serviceSelect = $('#id_service');
+    const dateInput = $('#id_appointment_date');
+    const shiftSelect = $('#id_shift');
+    const resultDiv = $('#availabilityResult');
+    const submitBtn = $('#submitBtn');
+    const checkBtn = $('#checkAvailabilityBtn');
+
+    function checkAvailability() {
+        const clinicId = clinicSelect.val();
+        const serviceId = serviceSelect.val();
+        const dateVal = dateInput.val();
+        const shiftId = shiftSelect.val();
+
+        resultDiv.html('<span class="text-info">Checking...</span>').show();
+        submitBtn.prop('disabled', true); // Disable submit while checking
+
+        if (!clinicId || !serviceId || !dateVal || !shiftId) {
+            resultDiv.html('<span class="text-warning">Please fill in all fields first.</span>');
+            return;
+        }
+
+        $.ajax({
+            url: "{% url 'appointments:ajax_check_availability' %}", // Use the named URL
+            data: {
+                'clinic': clinicId,
+                'service': serviceId,
+                'date': dateVal,
+                'shift': shiftId
+            },
+            dataType: 'json',
+            success: function(data) {
+                if (data.available) {
+                    resultDiv.html(`<span class="text-success">Slot Available! Initial Price: MVR ${data.price}.</span> <small>Final check performed upon booking.</small>`);
+                    submitBtn.prop('disabled', false); // Enable submit button
+                } else {
+                    resultDiv.html(`<span class="text-danger">Not Available: ${data.message}</span>`);
+                    submitBtn.prop('disabled', true);
+                }
+            },
+            error: function(xhr, status, error) {
+                 let errorMsg = 'Error checking availability.';
+                 if (xhr.responseJSON && xhr.responseJSON.error) {
+                     errorMsg = `Error: ${xhr.responseJSON.error}`;
+                 }
+                 resultDiv.html(`<span class="text-danger">${errorMsg}</span>`);
+                 submitBtn.prop('disabled', true);
+            }
+        });
+    }
+
+    // Check availability when the button is clicked
+    checkBtn.on('click', checkAvailability);
+
+    // Optional: Re-check or clear result if fields change after checking
+    form.find('select, input[type=date]').on('change', function() {
+        resultDiv.hide();
+        submitBtn.prop('disabled', true); // Disable submit if fields change
+    });
+});
+</script>
+{% endblock %}

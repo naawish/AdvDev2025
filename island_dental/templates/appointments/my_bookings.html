@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}My Bookings{% endblock %}
+
+{% block content %}
+<h2>My Appointments</h2>
+{% if appointments %}
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Ref #</th>
+                <th>Date</th>
+                <th>Shift</th>
+                <th>Clinic</th>
+                <th>Service</th>
+                <th>Doctor</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for appt in appointments %}
+            <tr>
+                <td><a href="{% url 'appointments:booking_detail' appt.booking_reference %}">{{ appt.booking_reference|stringformat:".8s" }}...</a></td>
+                <td>{{ appt.appointment_date|date:"Y-m-d" }}</td>
+                <td>{{ appt.shift.get_name_display }}</td>
+                <td>{{ appt.clinic.name }}</td>
+                <td>{{ appt.service.get_name_display }}</td>
+                <td>Dr. {{ appt.doctor.last_name }}</td>
+                <td><span class="badge bg-{% if appt.status == 'SCHEDULED' %}primary{% elif appt.status == 'COMPLETED' %}success{% elif appt.status == 'CANCELLED' %}warning text-dark{% else %}danger{% endif %}">{{ appt.get_status_display }}</span></td>
+                <td>
+                    {% if appt.status == 'SCHEDULED' and appt.appointment_date >= today %} {# Add 'today' context variable in view #}
+                    <form method="post" action="{% url 'appointments:cancel_booking' appt.booking_reference %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to cancel this booking?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger btn-sm">Cancel</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p>You have no appointments scheduled.</p>
+    <a href="{% url 'appointments:book_appointment' %}" class="btn btn-primary">Book Now</a>
+{% endif %}
+{% endblock %}
